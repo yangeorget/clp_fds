@@ -1,0 +1,106 @@
+UPDATES
+-------
+
+1/
+Date: Wed Jul  8 15:30:47 MET DST 1998
+Modification: clp(FD,S) v1.1 includes constraints: 
+	'x=choose(y,z)', 'x=min(y,z)', 'x=max(y,z)', ...
+
+2/
+Date: Thu Jul  9 08:52:23 MET DST 1998
+Modification: new Prolog builtin file (bits.pl) including some
+	predicates useful for semiring Sets
+
+3/
+Date: Thu Jul  9 08:52:23 MET DST 1998
+Modification: new enumeration & optimization predicates dedicated to 
+	semiring Sets in sfd_solve.pl & sfd_bips.pl
+	
+4/
+Date: Thu Jul  9 08:52:23 MET DST 1998
+Modification: new examples and new versions of older examples	
+
+5/
+Date: Thu Jul  9 10:20:15 MET DST 1998
+Modification: manual update
+
+6/ 
+Date: Fri Jul 17 15:37:57 MET DST 1998
+Modification: new arithmetic constraints
+
+7/ 
+Date: Fri Jul 17 15:37:57 MET DST 1998
+Modification: manual update
+
+8/
+Date: Mon Jul 27 17:01:27 MET DST 1998
+Modification: CF does not contain the contrained variable's adress 
+              anymore
+
+9/
+Date: Tue Jul 28 14:06:16 MET DST 1998
+Modification: predicates v_relation, v_element
+
+10/
+Date: Tue Jul 28 14:06:16 MET DST 1998
+Modification: new example (quasigroups)
+
+11/
+Date: Thu Jul 30 20:15:56 MET DST 1998
+Modification: new predicates deleteff, indomain_middle
+
+12/
+Date: Thu Jul 30 20:15:56 MET DST 1998
+Modification: manual update
+
+13/
+Date: Mon Aug  3 09:52:17 MET DST 1998
+Modification: global constraint g_alldifferent
+
+14/
+Date: Wed Aug  5 20:29:50 MET DST 1998
+Modification: more efficient handling of global constraints
+
+15/
+Date: Thu Aug 27 12:28:36 MET DST 1998
+Modification: predicates atleast, exactly.
+
+16/
+Date: Mon Sep 21 10:36:23 MET DST 1998
+Modification: manual update
+
+17/
+Date: Mon Sep 21 16:16:25 MET DST 1998
+Modification: new files hierarchy 
+
+18/
+Date: Thu Oct  8 14:45:22 MET DST 1998
+Modification: predicates for constraint retraction
+
+19/
+Date: Thu Oct  8 17:41:36 MET DST 1998
+Modification: boolean semiring specific builtins
+
+20/
+Date: Thu Oct  8 17:41:36 MET DST 1998
+Modification: set-based specific builtins start by sets_
+
+21/
+Date: Fri Oct 16 10:42:12 MET DST 1998
+Modification: directory Semirings contains the description of a semiring
+
+22/
+Date: Fri Nov 20 13:58:22 MET 1998
+Modification: new predicates for constraint retraction
+
+23/
+Date: Fri Nov 27 15:25:33 MET 1998
+Modification: Weak Commitment Search as a builtin
+
+24/
+Date: Fri Nov 27 15:25:33 MET 1998
+Modification: manual update
+
+25/
+Date: Mon Dec 28 10:08:35 MET 1998
+Modification: gsat examples

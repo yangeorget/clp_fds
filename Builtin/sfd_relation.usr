@@ -1,0 +1,505 @@
+/****************************************************************************
+Prolog to Wam Compiler                     INRIA Rocquencourt - ChLoE Project
+Version 2.21                                               Daniel Diaz - 1994
+Modified by Yan Georget - June 1998
+file : sfd_relation.usr
+****************************************************************************/
+
+
+/* Above this line, put your first macros (these included by pragma_c) */
+
+#undef  fail
+#define fail Fail_Like_Bool
+
+/* Below this line, put your others macros and your functions */
+
+
+          /*---------------------------------------------------------------*/
+          /* element1(I,X,N,LX,LV):                                        */
+          /* the Ith element of LX is equal to X with Ith truth value of LV*/
+          /*                    (LX and LV contain N elements)             */
+          /*                                                               */
+          /* A(0) must be bound to an FDV variable or an INT (or a UV)     */
+          /* A(1) must be bound to an FDV variable or an INT (or a UV)     */
+          /* A(2) must be bound to an INT                                  */
+          /* A(3) must be bound to a list of INT                           */
+          /* A(4) must be bound to a list of INT                           */
+          /*---------------------------------------------------------------*/
+
+#define Element1_5                                                          \
+    {                                                                       \
+     int i, len ;                                                           \
+     Deref(A(2),word,tag,adr)                                               \
+     len=UnTag_INT(word);                                                   \
+     fd_set_x_AF(2*len+3,5)                                /* AF in A(5) */ \
+     fd_x_value_in_A_frame(0)                              /* FV(0)=I    */ \
+     fd_x_value_in_A_frame(1)                              /* FV(1)=X    */ \
+     fd_x_term_parameter_in_A_frame(2)                     /* FP(2)=N    */ \
+     for(i=1;i<=len;i++)                                                    \
+        {                                                                   \
+         get_list(3)                                                        \
+         unify_x_variable(3)                                                \
+         fd_x_term_parameter_in_A_frame(3)        /* FP(2+i)=LXi */         \
+         unify_x_variable(3)                                                \
+        }                                                                   \
+     for(i=1;i<=len;i++)                                                    \
+        {                                                                   \
+         get_list(4)                                                        \
+         unify_x_variable(4)                                                \
+         fd_x_term_parameter_in_A_frame(4)        /* FP(2+N+i)=LVi */       \
+         unify_x_variable(4)                                                \
+        }                                                                   \
+     fd_install_constraint_with_x_AF(element1_1,5)                          \
+     fd_call_constraint                                                     \
+     fd_install_constraint_with_x_AF(element1_2,5)                          \
+     fd_call_constraint                                                     \
+    }
+
+
+Begin_Fd_Install(element1_1)
+
+     fd_create_C_frame(element1_1)
+     fd_install_ind_def(0)
+     fd_proceed
+
+End_Fd_Install
+
+
+Begin_Fd_Constraint(element1_1)              /* when I changes -> update X */
+     int     i;
+     Range* ri = Range(Frame_Variable(0)); 
+     int     n = Frame_Term_Parameter(2);
+     int     ix;
+     int     iv;
+     
+     switch (ri->mode)
+       {
+       case R_SPARSE:
+	 fd_allocate
+
+         Init_Range_Empty(&R(1));
+	 Vector_Allocate(R(1).vec);
+
+	 BEGIN_ENUM_VECTORAA(ri->vec)
+	   if (!IsNullA(vec_val))
+	     {
+	       fd_term_parameter(0,vec_elem+2)                    /* T(0)=Xi */
+	       fd_term_parameter(1,vec_elem+2+n)                  /* T(1)=Vi */
+	       Add_ValA_Vector(R(1).vec,T(0),MulA(vec_val,T(1)));
+	     }
+	 END_ENUM_VECTORAA
+
+         Range_From_Vector(&R(1));
+
+	 fd_tell_range(1,1)                                    /* tell X in R(1) */
+	 fd_proceed
+	 
+       case R_INTERVAL:
+	 fd_allocate
+
+	 Init_Range_Empty(&R(1));
+	 Vector_Allocate(R(1).vec);
+
+	 for(i = ri->min; i <= ri->max; i++)
+	   {
+	     fd_term_parameter(0,i+2)                    /* T(0)=Xi */
+	     fd_term_parameter(1,i+2+n)                  /* T(1)=Vi */
+	     Add_ValA_Vector(R(1).vec,T(0),MulA(ri->sigma,T(1)));
+	   }
+
+	 Range_From_Vector(&R(1));
+	 
+	 fd_tell_range(1,1)                                    /* tell X in R(1) */
+	 fd_proceed
+	 
+       case R_INTEGER:
+	 fd_term_parameter(0,(ri->min)+2)                  
+	 fd_term_parameter(1,(ri->min)+2+n)
+	 T(1) = (int) (MulA(ri->sigma,T(1)));
+
+	 fd_tell_integer_value(1,0,1)
+	 fd_proceed
+       }
+
+End_Fd_Constraint
+
+
+Begin_Fd_Enlargement(element1_1)     
+     fd_enlarge_var(1)
+End_Fd_Enlargement
+
+
+Begin_Fd_Test_Enlargement(element1_1)     
+     fd_test_enlargement_var(1)
+End_Fd_Test_Enlargement
+
+
+Begin_Fd_Reduction(element1_1)     
+     fd_reduce_vars(1)
+End_Fd_Reduction
+
+
+
+
+Begin_Fd_Install(element1_2)
+
+     fd_create_C_frame(element1_2)
+     fd_install_ind_def(1)
+     fd_proceed
+
+End_Fd_Install
+
+
+Begin_Fd_Constraint(element1_2)              /* when X changes -> update I */
+     int     i;
+     Range* ri = Range(Frame_Variable(0)) ; 
+     Range* rx = Range(Frame_Variable(1)) ; 
+     int     n = Frame_Term_Parameter(2);
+
+     switch (ri->mode)
+       {
+       case R_SPARSE:	 
+	 fd_allocate
+     
+	 Init_Range_Range(&R(0),ri);
+
+	 BEGIN_ENUM_VECTORAA(ri->vec)
+	   if (!IsNullA(vec_val))
+	     {
+	       fd_term_parameter(0,vec_elem+2)           /* T(0)=Xi */
+	       fd_term_parameter(1,vec_elem+2+n)         /* T(1)=Vi */  
+	       Mul_ValA_Vector(R(0).vec,vec_elem,MulA(Value_Of_Int_In_Range(rx,T(0)),T(1)));
+	     }
+	 END_ENUM_VECTORAA
+	  
+	 Range_From_Vector(&R(0)); 
+
+	 fd_tell_range(0,0)                                    /* tell I in R(0) */
+         fd_proceed
+	   
+       case R_INTERVAL:
+	 fd_allocate
+     
+	 Init_Range_Range(&R(0),ri);
+	 Range_Becomes_Sparse(&R(0));
+	 for (i = ri->min ; i <= ri->max ; i++)
+	   {
+	     fd_term_parameter(0,i+2)           /* T(0)=Xi */
+	     fd_term_parameter(1,i+2+n)         /* T(1)=Vi */  
+	     Mul_ValA_Vector(R(0).vec,i,MulA(Value_Of_Int_In_Range(rx,T(0)),T(1)));
+	   }	     
+	 Range_From_Vector(&R(0)); 
+	 
+	 fd_tell_range(0,0)                                    /* tell I in R(0) */
+	 fd_proceed
+
+
+       case R_INTEGER:
+	 fd_term_parameter(0,(ri->min)+2)                 /* T(0)=Xi */
+	 fd_term_parameter(1,(ri->min)+2+n)               /* T(1)=Vi */
+	 T(2) = ri->min;
+	 T(3) = (int) (MulA(ri->sigma,MulA(Value_Of_Int_In_Range(rx,T(0)),T(1))));	 
+	 
+	 fd_tell_integer_value(0,2,3)
+	 fd_proceed
+       }
+End_Fd_Constraint
+
+
+Begin_Fd_Enlargement(element1_2)     
+     fd_enlarge_var(0)
+End_Fd_Enlargement
+
+
+Begin_Fd_Test_Enlargement(element1_2)     
+     fd_test_enlargement_var(0)
+End_Fd_Test_Enlargement
+
+
+Begin_Fd_Reduction(element1_2)     
+     fd_reduce_vars(0)
+End_Fd_Reduction
+
+
+
+
+
+          /*---------------------------------------------------------------*/
+          /* v_element1(I,X,N,L):                                          */
+          /* the Ith element of L is equal to X                            */
+          /*             (L contain N elements)                            */
+          /*                                                               */
+          /* A(0) must be bound to an FDV variable or an INT (or a UV)     */
+          /* A(1) must be bound to an FDV variable or an INT (or a UV)     */
+          /* A(2) must be bound to an INT                                  */
+          /* A(3) must be bound to a list of FDV                           */
+          /*---------------------------------------------------------------*/
+
+#define V_Element1_4                                                        \
+    {                                                                       \
+     int i, len ;                                                           \
+     Deref(A(2),word,tag,adr)                                               \
+     len=UnTag_INT(word);                                                   \
+     fd_set_x_AF(len+3,4)                                  /* AF in A(4) */ \
+     fd_x_value_in_A_frame(0)                              /* FV(0)=I    */ \
+     fd_x_value_in_A_frame(1)                              /* FV(1)=X    */ \
+     fd_x_term_parameter_in_A_frame(2)                     /* FP(2)=N    */ \
+     for(i=1;i<=len;i++)                                                    \
+        {                                                                   \
+         get_list(3)                                                        \
+         unify_x_variable(3)                                                \
+         fd_x_value_in_A_frame(3)                          /* FP(2+i)=Li */ \
+         unify_x_variable(3)                                                \
+        }                                                                   \
+     fd_install_constraint_with_x_AF(v_element1_1,4)                        \
+     fd_call_constraint                                                     \
+     fd_install_constraint_with_x_AF(v_element1_2,4)                        \
+     fd_call_constraint                                                     \
+     fd_install_constraint_with_x_AF(v_element1_3,4)                        \
+     fd_call_constraint                                                     \
+    }
+
+
+Begin_Fd_Install(v_element1_1)
+     fd_create_C_frame(v_element1_1)
+     fd_global_constraint
+     fd_install_ind_def(0)
+     {
+     int i;	
+     for(i=1;i<=Frame_Term_Parameter(2);i++)
+         fd_install_ind_def(2+i)
+     }	
+     fd_proceed
+End_Fd_Install
+
+
+Begin_Fd_Constraint(v_element1_1)  /* when I or L change -> update X */
+     Range* ri = Range(Frame_Variable(0)) ; 
+     int     i;
+
+     switch (ri->mode)
+     {
+     case R_SPARSE:
+       fd_allocate
+	 
+       Init_Range_Empty(&R(1));	
+       Vector_Allocate(R(1).vec);
+       Init_Range_Empty(&R(2));
+       Vector_Allocate(R(2).vec);
+
+       BEGIN_ENUM_VECTORAA(ri->vec)
+	 if (!IsNullA(vec_val))
+	   {
+	     Range_Copy(&R(2),Range(Frame_Variable(vec_elem+2))); /* R(2)=Li */
+	     Range_MulA_Term(&R(2),vec_val);
+	     Range_AddA_Range(&R(1),&R(2));
+	   }
+       END_ENUM_VECTORAA
+	 
+       fd_tell_range(1,1)                                  /* tell X in R(1) */
+       fd_proceed
+
+     case R_INTERVAL:
+       fd_allocate
+	 
+       Init_Range_Empty(&R(1));	
+       Vector_Allocate(R(1).vec);
+
+       for (i = ri->min ; i <= ri->max ; i++)
+          Range_AddA_Range(&R(1),Range(Frame_Variable(i+2)));
+       Range_MulA_Term(&R(1),ri->sigma);
+	 
+       fd_tell_range(1,1)                                  /* tell X in R(1) */
+       fd_proceed
+       
+     case R_INTEGER:
+       fd_allocate
+	 
+       Init_Range_Range(&R(1),Range(Frame_Variable(ri->min+2))); /* R(1)=Li */
+       Range_MulA_Term(&R(1),ri->sigma) ;
+
+       fd_tell_range(1,1)                                  /* tell X in R(1) */
+       fd_proceed
+     }
+End_Fd_Constraint
+
+
+Begin_Fd_Enlargement(v_element1_1)     
+     fd_enlarge_var(1)
+End_Fd_Enlargement
+
+
+Begin_Fd_Test_Enlargement(v_element1_1)     
+     fd_test_enlargement_var(1)
+End_Fd_Test_Enlargement
+
+
+Begin_Fd_Reduction(v_element1_1)     
+     fd_reduce_vars(1)
+End_Fd_Reduction
+
+
+
+
+Begin_Fd_Install(v_element1_2)
+     fd_create_C_frame(v_element1_2)
+     fd_global_constraint
+     fd_install_ind_def(1)
+     {
+     int i;	
+     for(i=1;i<=Frame_Term_Parameter(2);i++)
+         fd_install_ind_def(2+i)
+     }
+     fd_proceed
+End_Fd_Install
+
+
+Begin_Fd_Constraint(v_element1_2)        /* when X or L change -> update I */
+     Range* rx = Range(Frame_Variable(1)) ; 
+     Range* ri = Range(Frame_Variable(0)) ; 
+     Range* rt ;
+     int i;
+
+     switch (ri->mode)
+       {
+       case R_SPARSE:
+         fd_allocate
+         Init_Range_Empty(&R(0));
+	 Vector_Allocate(R(0).vec);
+
+	 BEGIN_ENUM_VECTORAA(ri->vec)
+	   if (!IsNullA(vec_val))
+	     {
+	       rt = Range(Frame_Variable(vec_elem+2)) ;
+	       if (Range_Intersection(rx,rt)) 
+		 Add_ValA_Vector(R(0).vec,vec_elem,MulA(rx->sigma,rt->sigma)) ;
+	     }      
+	 END_ENUM_VECTORAA
+
+	 Range_From_Vector(&R(0)); 
+
+         fd_tell_range(0,0)                             /* tell I in R(0) */
+         fd_proceed
+
+     case R_INTERVAL:
+	 fd_allocate
+         
+	 Init_Range_Empty(&R(0));
+	 Vector_Allocate(R(0).vec);
+
+	 for(i = ri->min ; i <= ri->max ; i++)
+	   {
+	     rt = Range(Frame_Variable(i+2)) ;
+	     if (Range_Intersection(rx,rt)) 
+	       Add_ValA_Vector(R(0).vec,i,MulA(rx->sigma,rt->sigma)) ;
+	   }      
+	 
+	 Range_From_Vector(&R(0)); 
+
+	 fd_tell_range(0,0)                             /* tell I in R(0) */
+	 fd_proceed
+
+     case R_INTEGER:
+         rt = Range(Frame_Variable(ri->min+2)) ;
+         if (Range_Intersection(rx,rt)) 
+	   {
+             T(0) = ri->min;
+	     T(1) = (int) MulA(rx->sigma,rt->sigma) ;
+	     
+             fd_tell_integer_value(0,0,1)
+             fd_proceed
+           }
+	 else 
+	   return FALSE;
+     }
+End_Fd_Constraint
+
+
+Begin_Fd_Enlargement(v_element1_2)     
+     fd_enlarge_var(0)
+End_Fd_Enlargement
+
+
+Begin_Fd_Test_Enlargement(v_element1_2)     
+     fd_test_enlargement_var(0)
+End_Fd_Test_Enlargement
+
+
+Begin_Fd_Reduction(v_element1_2)     
+     fd_reduce_vars(0)
+End_Fd_Reduction
+
+
+
+
+Begin_Fd_Install(v_element1_3)
+     fd_create_C_frame(v_element1_3)
+     fd_global_constraint
+     fd_install_ind_def(0)
+     fd_install_ind_def(1)
+     fd_proceed
+End_Fd_Install
+
+
+Begin_Fd_Constraint(v_element1_3)        /* when X or I change -> update L */
+     Range* ri = Range(Frame_Variable(0)) ; 
+     
+     if (ri->mode == R_INTEGER)
+         {
+	   fd_allocate
+
+	   Init_Range_Range(&R(1),Range(Frame_Variable(1))) ;
+	   Range_MulA_Term(&R(1),ri->sigma);
+
+           fd_tell_range(2+(ri->min),1)           
+          }
+
+     fd_proceed
+    
+End_Fd_Constraint
+
+
+Begin_Fd_Enlargement(v_element1_3)     
+{
+     int i;	
+
+     for(i=1;i<=Frame_Term_Parameter(2);i++)
+         fd_enlarge_var(2+i)
+}
+End_Fd_Enlargement
+
+
+Begin_Fd_Test_Enlargement(v_element1_3)     
+{
+     int i;	
+
+     for(i=1;i<=Frame_Term_Parameter(2);i++)
+         if (get_test_enlargement_var(2+i))
+	    return TRUE;
+    
+     return FALSE;
+}
+End_Fd_Test_Enlargement
+
+
+Begin_Fd_Reduction(v_element1_3)     
+{
+     int i;	
+     for(i=1;i<=Frame_Term_Parameter(2);i++)
+         fd_reduce_vars(2+i)
+}
+End_Fd_Reduction
+
+
+static void Initialize_Usr(void)
+
+{
+}
+
+/* end of user file */
+
+#undef  fail
+#define fail Fail_Like_Wam
+
+
+

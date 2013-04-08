@@ -1,0 +1,25 @@
+/****************************************************************************
+Prolog to Wam Compiler - Version 1.0
+Daniel Diaz, Yan Georget
+1998 - INRIA Rocquencourt - LOCO Project
+file : top_level.usr
+****************************************************************************/
+
+
+/* Above this line, put your first macros (these included by pragma_c) */
+
+#undef  fail
+#define fail Fail_Like_Bool
+
+/* Below this line, put your others macros and your functions */
+
+
+static void Initialize_Usr(void)
+
+{
+}
+
+/* end of user file */
+
+#undef  fail
+#define fail Fail_Like_Wam

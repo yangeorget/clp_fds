@@ -1,0 +1,114 @@
+/****************************************************************************
+Prolog to Wam Compiler                     INRIA Rocquencourt - ChLoE Project
+Version 2.21                                               Daniel Diaz - 1994
+Modified by Yan Georget - June 1998
+file : sfd_domain.usr
+****************************************************************************/
+
+
+
+          /*---------------------------------------------------------------*/
+          /* fd_var(X): tests if X is an FD variable                       */
+          /*                                                               */
+          /* A(0) is a term                                                */
+          /*---------------------------------------------------------------*/
+
+#define Fd_Var_1                                                            \
+     Deref(A(0),word,tag,adr)                                               \
+     if (tag!=FDV)                                                          \
+         fail
+
+
+          /*---------------------------------------------------------------*/
+          /* fd_vector_max(N): define the max value (N) for the vector     */
+          /*                                                               */
+          /* A(0) must be bound to an INT or an unbound variable           */
+          /*---------------------------------------------------------------*/
+
+#define Fd_Vector_Max_1                                                     \
+    {                                                                       \
+     Deref(A(0),word,tag,adr)                                               \
+     if (tag==INT)                                                          \
+         Define_Vector_Size(UnTag_INT(word));                               \
+      else                                                                  \
+         get_integer(vec_infinity,0)                                        \
+    }
+
+
+#define Sfd_Value_Index_3                                                   \
+    {                                                                       \
+     int bi = 0 ;                                                           \
+     VecWord bv = NullA ;                                                   \
+     int*  bi_adr = &bi;                                                    \
+     VecWord*  bv_adr = &bv;                                                \
+     Deref(A(0),word,tag,adr)                                               \
+     if (tag!=FDV) {fail}                                                   \
+     Range_Value_Index(Range(UnTag_FDV(word)),bv_adr,bi_adr) ;              \
+                                                                            \
+     bi = *bi_adr ;                                                         \
+     bv = *bv_adr ;                                                         \
+     get_integer(bv,1)  ;                                                   \
+     get_integer(bi,2)  ;                                                   \
+    }
+
+
+#define Sfd_Min_2                                                           \
+    {                                                                       \
+     int bi;                                                                \
+     Deref(A(0),word,tag,adr)                                               \
+     if (tag!=FDV) {fail}                                                   \
+     bi = Min(UnTag_FDV(word));                                             \
+     get_integer(bi,1)  ;                                                   \
+    }
+
+
+#define Sfd_Max_2                                                           \
+    {                                                                       \
+     int bi;                                                                \
+     Deref(A(0),word,tag,adr)                                               \
+     if (tag!=FDV) {fail}                                                   \
+     bi = Max(UnTag_FDV(word));                                             \
+     get_integer(bi,1)  ;                                                   \
+    }
+
+
+#define Sfd_Size_2                                                          \
+    {                                                                       \
+     int bi = 0 ;                                                           \
+     Deref(A(0),word,tag,adr)                                               \
+     if (tag!=FDV) {fail}                                                   \
+     bi = Range_Nb_Elem(Range(UnTag_FDV(word))) ;                           \
+     get_integer(bi,1)  ;                                                   \
+    }
+
+
+#define Sfd_Is_Instantiated_1                                               \
+    {                                                                       \
+     Deref(A(0),word,tag,adr)                                               \
+     if (tag!=FDV) {fail}                                                   \
+     if (Mode(UnTag_FDV(word)) != R_INTEGER)     {fail}                     \
+    }
+
+
+
+/* Above this line, put your first macros (these included by pragma_c) */
+
+#undef  fail
+#define fail Fail_Like_Bool
+
+/* Below this line, put your others macros and your functions */
+
+
+
+static void Initialize_Usr(void)
+
+{
+}
+
+/* end of user file */
+
+#undef  fail
+#define fail Fail_Like_Wam
+
+
+

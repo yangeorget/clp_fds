@@ -1,0 +1,325 @@
+/****************************************************************************
+Prolog to Wam Compiler                     INRIA Rocquencourt - ChLoE Project
+Version 2.1                                                Daniel Diaz - 1994
+Modified by Yan Georget - June 1998
+file : sfd_bool.usr
+****************************************************************************/
+
+/*---------------------------------*/
+/* Constants                       */
+/*---------------------------------*/
+
+/*---------------------------------*/
+/* Type Definitions                */
+/*---------------------------------*/
+
+/*---------------------------------*/
+/* Global Variables                */
+/*---------------------------------*/
+
+/*---------------------------------*/
+/* Functions's Protoypes           */
+/*---------------------------------*/
+
+
+
+/*---------------------------------*/
+/* NOT_VECTOR                      */
+/*---------------------------------*/
+void Not_Vector(Vector v)
+{
+  VecWord v0 = ValA_Vector(v,0) ;
+  VecWord v1 = ValA_Vector(v,1) ;
+
+  Set_ValA_Vector(v,0,v1) ;
+  Set_ValA_Vector(v,1,v0) ;
+}
+
+
+/*---------------------------------*/
+/* AND_VECTOR_VECTOR               */
+/*---------------------------------*/
+void And_R_Vector_Vector(Vector v, Vector w)
+{
+  VecWord v0 = ValA_Vector(v,0) ;
+  VecWord v1 = ValA_Vector(v,1) ;
+  VecWord w0 = ValA_Vector(w,0) ;
+  VecWord w1 = ValA_Vector(w,1) ;
+
+  Set_ValA_Vector(v,0,AddA(MulA(w0,AddA(v0,v1)),MulA(v0,w1))) ;
+  Mul_ValA_Vector(v,1,w1) ;
+}
+
+void And_A_Vector_Vector(Vector v, Vector w)
+{
+  VecWord v0 = ValA_Vector(v,0) ;
+  VecWord v1 = ValA_Vector(v,1) ;
+  VecWord w0 = ValA_Vector(w,0) ;
+  VecWord w1 = ValA_Vector(w,1) ;
+
+  Mul_ValA_Vector(v,0,AddA(w1,w0)) ;
+  Set_ValA_Vector(v,1,AddA(MulA(v0,w0),MulA(v1,w1))) ;
+}
+
+
+/*---------------------------------*/
+/* OR_VECTOR_VECTOR                */
+/*---------------------------------*/
+void Or_R_Vector_Vector(Vector v, Vector w)
+{
+  VecWord v0 = ValA_Vector(v,0) ;
+  VecWord v1 = ValA_Vector(v,1) ;
+  VecWord w0 = ValA_Vector(w,0) ;
+  VecWord w1 = ValA_Vector(w,1) ;
+
+  Mul_ValA_Vector(v,0,w0) ;
+  Set_ValA_Vector(v,1,AddA(MulA(w1,AddA(v0,v1)),MulA(v1,w0))) ;
+}
+
+void Or_A_Vector_Vector(Vector v, Vector w)
+{
+  VecWord v0 = ValA_Vector(v,0) ;
+  VecWord v1 = ValA_Vector(v,1) ;
+  VecWord w0 = ValA_Vector(w,0) ;
+  VecWord w1 = ValA_Vector(w,1) ;
+
+  Set_ValA_Vector(v,0,AddA(MulA(v0,w0),MulA(v1,w1))) ;
+  Mul_ValA_Vector(v,1,AddA(w0,w1)) ;
+}
+
+
+/*---------------------------------*/
+/* XOR_VECTOR_VECTOR               */
+/*---------------------------------*/
+void Xor_R_Vector_Vector(Vector v, Vector w)
+{
+  VecWord v0 = ValA_Vector(v,0) ;
+  VecWord v1 = ValA_Vector(v,1) ;
+  VecWord w0 = ValA_Vector(w,0) ;
+  VecWord w1 = ValA_Vector(w,1) ;
+
+  Set_ValA_Vector(v,0,AddA(MulA(v0,w0),MulA(v1,w1))) ;
+  Set_ValA_Vector(v,1,AddA(MulA(v1,w0),MulA(v0,w1))) ;
+}
+
+void Xor_A_Vector_Vector(Vector v, Vector w)
+{
+  VecWord v0 = ValA_Vector(v,0) ;
+  VecWord v1 = ValA_Vector(v,1) ;
+  VecWord w0 = ValA_Vector(w,0) ;
+  VecWord w1 = ValA_Vector(w,1) ;
+
+  Set_ValA_Vector(v,0,AddA(MulA(v0,w0),MulA(v1,w1))) ;
+  Set_ValA_Vector(v,1,AddA(MulA(v1,w0),MulA(v0,w1))) ;
+}
+
+
+/*---------------------------------*/
+/* Misc                            */
+/*---------------------------------*/
+void Bool_Range_Becomes_Sparse(Range *range)
+
+{
+  Vector_Allocate_If_Necessary(range->vec);
+  Set_Vector_Empty(range->vec) ;
+
+  switch(range->mode)
+    {
+    case R_INTEGER:
+      Set_ValA_Vector(range->vec,range->min,range->sigma);
+      
+    case R_INTERVAL: case R_SPARSE:      
+      Set_ValA_Vector(range->vec,range->min,range->sigma);
+      Set_ValA_Vector(range->vec,range->max,range->sigma);
+    } 
+
+  range->mode = R_SPARSE;
+}
+
+
+void Bool_Range_From_Vector(Range *range)
+
+{
+  VecWord v0 = ValA_Vector(range->vec,0);
+  VecWord v1 = ValA_Vector(range->vec,1);
+  
+  range->sigma = AddA(v0,v1);
+  
+  if (IsNullA(range->sigma))
+    {
+      range->mode = R_EMPTY;
+      return;
+    }
+  
+  if (IsNullA(v0))
+    {
+      range->min = 1 ;
+      range->max = 1 ;
+      range->mode = R_INTEGER;
+      return;     
+    }
+  
+  if (IsNullA(v1))
+    {
+      range->min = 0;
+      range->min = 0;
+      range->mode = R_INTEGER;
+      return;     
+    }
+  
+ range->min = 0;
+ range->max = 1;
+}
+
+
+/*---------------------------------*/
+/* Functions called by Prolog:     */
+/*---------------------------------*/
+void not(Range *range, Range *range1)
+{
+  if (range1->mode == R_EMPTY)
+    {
+      range->mode = R_EMPTY;
+      return;
+    }
+
+  Range_Copy(range,range1);
+  Bool_Range_Becomes_Sparse(range);
+  Not_Vector(range->vec);
+  Bool_Range_From_Vector(range);
+}
+
+
+void and_r(Range *range, Range *range2, Range *range1)
+{     
+  if (range2->mode == R_EMPTY || range1->mode == R_EMPTY)
+    {
+      range->mode = R_EMPTY;
+      return;
+    }
+
+  Range_Copy(range,range2);      
+  Bool_Range_Becomes_Sparse(range);
+  Bool_Range_Becomes_Sparse(range1);
+  And_R_Vector_Vector(range->vec, range1->vec);
+  Bool_Range_From_Vector(range);
+}
+
+
+void and_a(Range *range, Range *range2, Range *range1)
+{     
+  if (range2->mode == R_EMPTY || range1->mode == R_EMPTY)
+    {
+      range->mode = R_EMPTY;
+      return;
+    }
+
+  Range_Copy(range,range2);      
+  Bool_Range_Becomes_Sparse(range);
+  Bool_Range_Becomes_Sparse(range1);
+  And_A_Vector_Vector(range->vec, range1->vec);
+  Bool_Range_From_Vector(range);
+}
+
+
+void or_r(Range *range, Range *range2, Range *range1)
+{     
+  if (range2->mode == R_EMPTY || range1->mode == R_EMPTY)
+    {
+      range->mode = R_EMPTY;
+      return;
+    }
+
+  Range_Copy(range,range2);      
+  Bool_Range_Becomes_Sparse(range);
+  Bool_Range_Becomes_Sparse(range1);
+  Or_R_Vector_Vector(range->vec, range1->vec);
+  Bool_Range_From_Vector(range);
+}
+
+
+void or_a(Range *range, Range *range2, Range *range1)
+{     
+  if (range2->mode == R_EMPTY || range1->mode == R_EMPTY)
+    {
+      range->mode = R_EMPTY;
+      return;
+    }
+
+  Range_Copy(range,range2);      
+  Bool_Range_Becomes_Sparse(range);
+  Bool_Range_Becomes_Sparse(range1);
+  Or_A_Vector_Vector(range->vec, range1->vec);
+  Bool_Range_From_Vector(range);
+}
+
+
+void xor_r(Range *range, Range *range2, Range *range1)
+{     
+  if (range2->mode == R_EMPTY || range1->mode == R_EMPTY)
+    {
+      range->mode = R_EMPTY;
+      return;
+    }
+
+  Range_Copy(range,range2);      
+  Bool_Range_Becomes_Sparse(range);
+  Bool_Range_Becomes_Sparse(range1);
+  Xor_R_Vector_Vector(range->vec, range1->vec);
+  Bool_Range_From_Vector(range);
+}
+
+
+void xor_a(Range *range, Range *range2, Range *range1)
+{     
+  if (range2->mode == R_EMPTY || range1->mode == R_EMPTY)
+    {
+      range->mode = R_EMPTY;
+      return;
+    }
+
+  Range_Copy(range,range2);      
+  Bool_Range_Becomes_Sparse(range);
+  Bool_Range_Becomes_Sparse(range1);
+  Xor_A_Vector_Vector(range->vec, range1->vec);
+  Bool_Range_From_Vector(range);
+}
+
+
+
+/* Above this line, put your first macros (these included by pragma_c) */
+
+#undef  fail
+#define fail Fail_Like_Bool
+
+/* Below this line, put your others macros and your functions */
+
+
+
+/*-------------------------------------------------------------------------*/
+/* INITALIZE_USR                                                           */
+/*                                                                         */
+/*-------------------------------------------------------------------------*/
+static void Initialize_Usr(void)
+
+{
+}
+
+/* end of user file */
+
+#undef  fail
+#define fail Fail_Like_Wam
+
+
+
+
+
+
+
+
+
+
+
+
+
+

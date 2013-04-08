@@ -1,0 +1,146 @@
+/****************************************************************************
+Prolog to Wam Compiler - Version 1.1
+Daniel Diaz, Yan Georget
+1998 - INRIA Rocquencourt - LOCO Project
+file : sfd_retraction.usr
+****************************************************************************/
+
+
+#define Cstrs_Block_Start_0                                                 \
+     fd_cstrs_block_start        
+
+
+
+#define Cstrs_Block_Start_1                                                 \
+     {                                                                      \
+       int cb;                                                              \
+                                                                            \
+       Deref(A(0),word,tag,adr)                                             \
+       cb = UnTag_INT(word);                                                \
+       if (cb)                                                              \
+	   {fd_cstrs_block_start_from(Global_Stack+cb)}                     \
+       else                                                                 \
+	   {fd_cstrs_block_start}                                           \
+     }
+
+
+
+#define Cstrs_Block_End_1                                                   \
+     {                                                                      \
+       WamWord *cb_adr;                                                     \
+       int      cb;                                                         \
+                                                                            \
+       fd_cstrs_block_end(cb_adr)                                           \
+       if (cb_adr)                                                          \
+	 {cb = Global_Offset(cb_adr);}                                      \
+       else                                                                 \
+         {cb = 0;}                                                          \
+       get_integer(cb,0)                                                    \
+     }      
+
+
+
+#define Cstrs_Block_Retract_1                                               \
+     {                                                                      \
+       int cb;                                                              \
+                                                                            \
+       Deref(A(0),word,tag,adr)                                             \
+       cb = UnTag_INT(word);                                                \
+       if (cb)						                    \
+	 {fd_cstrs_block_retract(Global_Stack+cb)}                          \
+     }
+
+
+
+#define Cstrs_Block_Tell_1                                                  \
+     {                                                                      \
+       int cb;                                                              \
+                                                                            \
+       Deref(A(0),word,tag,adr)                                             \
+       cb = UnTag_INT(word);                                                \
+       if (cb)						                    \
+	 {fd_cstrs_block_tell(Global_Stack+cb)}                             \
+     }
+
+
+
+#define Cstrs_Block_Size_2                                                  \
+     {                                                                      \
+       int size;                                                            \
+       int cb;                                                              \
+                                                                            \
+       Deref(A(0),word,tag,adr)                                             \
+       cb = UnTag_INT(word);                                                \
+       if (cb)						                    \
+	 {fd_cstrs_block_size(Global_Stack+cb,size)}                        \
+       else                                                                 \
+         {size = 0;}                                                        \
+       get_integer(size,1)                                                  \
+     }
+									     
+
+
+
+
+ 
+#define Fdv_Cstrs_Block_Put_2                                               \
+     {                                                                      \
+       int cb;                                                              \
+       WamWord* fdv_adr;                                                    \
+                                                                            \
+       Deref(A(0),word,tag,adr)                                             \
+       if (tag!=FDV)                                                        \
+          {fail}                                                            \
+       fdv_adr = UnTag_FDV(word);                                           \
+                                                                            \
+       Deref(A(1),word,tag,adr)                                             \
+       cb = UnTag_INT(word);                                                \
+                                                                            \
+       Trail_OV(&Cstrs_Block(fdv_adr));                                     \
+       if (cb)                                                              \
+          {Cstrs_Block(fdv_adr) = (WamWord) (Global_Stack+cb);}             \
+       else                                                                 \
+          {Cstrs_Block(fdv_adr) = (WamWord) NULL;}                          \
+     }
+
+
+
+#define Fdv_Cstrs_Block_Get_2                                               \
+    {                                                                       \
+     WamWord *cb_adr;                                                       \
+     WamWord *fdv_adr;                                                      \
+     int cb;                                                                \
+                                                                            \
+     Deref(A(0),word,tag,adr)                                               \
+     if (tag!=FDV)                                                          \
+        {fail}                                                              \
+     fdv_adr = UnTag_FDV(word);                                             \
+                                                                            \
+     cb_adr = (WamWord*) Cstrs_Block(fdv_adr);                              \
+     if (cb_adr == NULL)                                                    \
+        {cb = 0;}                                                           \
+     else                                                                   \
+        {cb = Global_Offset(cb_adr);}                                       \
+     get_integer(cb,1)                                                      \
+    }
+
+
+
+/* Above this line, put your first macros (these included by pragma_c) */
+
+
+#undef  fail
+#define fail Fail_Like_Bool
+
+
+/* Below this line, put your others macros and your functions */
+
+static void Initialize_Usr(void)
+
+{
+}
+
+/* end of user file */
+
+#undef  fail
+#define fail Fail_Like_Wam

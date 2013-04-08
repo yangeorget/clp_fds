@@ -1,0 +1,596 @@
+			 Interfacing wamcc and C
+     			 -----------------------
+
+			(written: Jan, 27th 1995)
+			(updated: Mar,  7th 1995)
+
+			 (diaz@margaux.inria.fr)
+
+
+WARNING: 
+this documentation is very provisory and a better inteface facility will be
+soon available.  
+
+
+
+
+I- Calling C From Prolog
+------------------------
+
+
+
+I.1- Using pragma_c/1
+---------------------
+
+The predicate pragma_c(Code) allows the user to directly include C code in
+Prolog predicates. Code is an atom corresponding to the C
+code. Generally Code is the name of a Macro defined in the .usr file. 
+
+pragma_c succeeds if the C succeeds. The C code fails if it calls 'fail'.
+Note that you can only call 'fail' in the macro. If you want to fail inside a
+function, this function must return a boolean which will be tested by the
+macro to call 'fail' if necessary.
+
+
+Prolog arguments are passed in registers A(0),...,A(n-1) (arity=n).
+
+Remarks:
+
+ 1 - without looking at the C code produced, you only know the content
+     of a A(i) register at the begining of a clause
+
+        p(X,Y):- pragma_c('My_Macro'), q(...), ...
+        you know that X is in A(0), Y in A(1)
+
+
+        p(X,Y):- q(...), pragma_c('My_Macro'), ...
+        when My_Macro is executed A(0) no longer contains X since A(0)
+        has been set before the call to q/2.
+
+     The solutions consists in invoking an intermediate predicate which only
+     calls the macros, e.g :
+
+        p(X,Y):- q(...), intermediate(X,Y), ...
+
+        intermediate(_X,_Y):-
+                pragma_c('My_Macro').
+
+
+
+ 2 - Any call to a C library function (e.g. printf) must be encapsulated 
+     into a call to a macro Libn(fct,arg1,...,argn) 
+     (n in 0..5 = nb of arguments)
+
+     so, instead of:
+
+           printf("\nC_usr: X is %s.\n",X);             \
+           printf("\nC_usr: Y is %s.\n\n",Y);           \
+
+     use:
+
+           Lib2(printf,"\nC_usr: X is %s.\n",X);        \
+           Lib2(printf,"\nC_usr: Y is %s.\n\n",Y);      \
+
+     this is (for the moment) only required for Sparc machines because 
+     wamcc uses some registers which are destroyed by C lib functions.
+     So on this machine Libn(..) macros save and restore these registers.
+
+
+
+ 3- integers multiplications/divisions/modulos must be encapsulated into
+    calls to M_Mul/M_Div/M_Mod (for the same reason as above)
+
+    ex:
+
+       int z=M_Mul(x,y);
+
+
+
+I.2- Getting A(i) Register Data from C
+--------------------------------------
+
+The content of each argument is accessed with the Deref macro:
+
+     Deref(A(i),word,tag,adr)
+
+   where i    is the argument number (0..arity-1)	(type: int)
+         word is the word associated to A(i)		(type: WamWord)
+         tag  is the type of the datum			(type: WamWord)
+         adr  is only valid for variables		(type: WamWord *)
+              and indicates the address of the variable
+
+
+Data types (see 'tag'):
+
+tag==REF	a prolog variable (whose address is in 'adr')
+tag==INT	an integer
+tag==CST	an atom (also the empty list [])
+tag==LST	a list [car|cdr]
+taf==STC	a structure f(x1,...,xn)
+
+
+The macros UnTag_xxx (where xxx is INT/CST/REF/LST/REF) extract from 'word'
+the datum associated to the type. The result is:
+
+for REF: the address (same as the content of 'adr')
+
+for INT: the integer 
+
+for CST: a pointer into the hash table where are stored the constants
+	 each record has a type AtomInf *
+
+         typedef struct                  /* Atom information               */
+             {                           /* ------------------------------ */
+              char    *name;             /* key is <name> (the string)     */
+              int      type;             /* IDENTIFIER, SYMBOL, SOLO, OTHER*/
+              Bool     has_quote;        /* does name contain any ' ?      */
+              Bool     needs_quote;      /* does name need ' around it ?   */
+              int      length;           /* its length (in characters)     */
+              GVarElt  g_elem;           /* global variable element        */
+             }AtomInf;
+
+  	 There is a field 'name' containing a pointer to the string.
+
+
+for LST: a pointer to 2 consecutive words: the car and the cdr.
+
+         If 'lst_adr' is this pointer then:
+         Car(lst_adr) is a macro accessing to the car 
+         Cdr(lst_adr) is a macro accessing to the cdr
+
+         example:
+
+         WamWord *lst_adr=UnTag_LST(word);
+
+         Deref(car(lst_adr),word,tag,adr)
+         <... car treatment...>
+
+         Deref(cdr(lst_adr),word,tag,adr)
+         <... cdr treatment...>
+
+
+for STC: a pointer to n+1 consecutive words 
+         (1 for functor/n and n for the n sub-terms)
+
+         If 'stc_adr' is this pointer then:
+         Functor(stc_adr) is a macro accessing to the functor (AtomInf *).
+         Arity(stc_adr)   is a macro accessing to the arity 'n'.
+         Arg(stc_adr,i)   is a macro accessing to the ith arg (i in 0..n-1).
+
+
+
+Several examples can be found in Builtin/*.usr  
+(in particular: write.usr and lib_inline.c):
+
+Example:
+
+We want to define a predicate p(X,Y) which must call a fct foo(int x,char *y)
+passing X (must be an integer) and Y an atom.
+
+
+in your file_name.pl write:
+
+p(X,Y):-
+	pragma_c('P_2').
+
+in your file_name.usr write:
+
+#define P_2  				\
+    {					\
+     int x;				\
+     AtomInf *atom;			\
+     char *y;				\
+					\
+     Deref(A(0),word,tag,adr)		\
+     x=UnTag_INT(word); 		\
+     Deref(A(1),word,tag,adr)		\
+     atom=UnTag_CST(word); 		\
+     y=atom->name;			\
+     foo(x,y);				\
+    }
+
+
+
+I.3- Unifying A(i) Registers and C Data
+---------------------------------------
+
+The following functions performing unifications return a boolean to indicate
+the issue of the unification.
+
+The unification of the A(i) register is as follows:
+
+a variable or an unknown datum in 'w' (type: WamWord):
+   Unify(w,A(i));
+
+   However, if you know the type of the C datum you can use specific
+   functions which are more efficient than the general unification fonction.
+  
+an integer 'n':
+   Get_Integer(n,A(i));
+
+a constant 'atom': 
+   Get_Constant(atom,A(i));     (type of 'atom': AtomInf *).
+
+   To create a new atom from a string 'str' use:
+
+   atom=Create_Allocate_Atom(str);
+
+   which adds the string 'str' to the hash table and returns atom, a pointer
+   to the created structure.
+
+an empty list (particular case of constant):
+   Get_Constant(atom_nil,A(i));	atom_nil is a global variable predefined
+   or:  Get_Nil(A(i));
+
+a list [car|cdr]:
+   Get_List(A(i));
+   <unification of sub-term 'car'>
+   <unification of sub-term 'cdr'>
+
+   see unification of sub-term instructions below.
+
+a structure f(t1,...,tm):
+   Get_Structure(atom_f,m,A(i));
+   <unification of sub-term 't1'>
+           :
+   <unification of sub-term 'tm'>
+
+   atom_f is the atom corresponding to the functor 'f'
+   (see above how to define new atoms from strings)
+
+
+a new variable (which will be also stored in A(j)):
+   Unify_Variable(&A(j));    (this function does not return a value since it
+                              always succeeds) 
+
+a variable already stored in A(j) (i.e. bound):
+   Unify_Value(A(j));
+
+an integer 'n':
+   Unify_Integer(n);
+
+a constant 'atom':
+   Unify_Constant(atom);
+
+an empty list:
+   Unify_Constant(atom_nil);
+   or
+   Unify_Nil();
+
+
+
+Example:
+
+square(X,Y):-
+	pragma_c('Square_2').
+
+
+#define Square_2 			\
+    {					\
+     int x;				\
+					\
+     Deref(A(0),word,tag,adr)		\
+     x=UnTag_INT(word); 		\
+     x=x*x;				\
+     if (!Get_Integer(x,A(1)))		\
+         fail
+    }
+
+
+
+II. Calling Prolog From C
+-------------------------
+
+
+
+II.1- The Prolog Code
+---------------------
+
+- Define your Prolog code as a module (without :- main/1 declaration).
+- Define as public (:- public/1) all predicates that can be called from C.
+
+In the following we assume that your Prolog module is named 'modul.pl'
+and that you can call the predicate 'pred/n'
+
+
+
+II.2- The C Code
+----------------
+
+In the following we assume that the main C program is called prog.c
+The structure of the C code is as follows:
+
+
+/* prog.c */
+#include "wam_interface.h"
+
+
+main(int argc,char *argv[])
+
+{
+
+ Pl_Init_Wam_And_Module(argc,argv,modul)
+
+ :
+ :
+
+	/* call to pred/n */
+
+ Pl_ReInit_Wam
+
+ <...load reg A(0)...>
+       :
+ <...load reg A(n-1)...>
+
+ Pl_Query(PredHex,n,code_else)		/* find the first solution */
+					/* or execute 'code_else'  */
+
+ <..get the content of A(i) registers intially set to a variable>
+ 
+ :
+ :
+
+	/* if other solutions wanted */
+
+ Pl_Next_Solution(code_else)
+ <..get the content of A(i) registers intially set to a variable>
+
+ :
+ :
+
+ Pl_Term_Wam
+}
+
+
+
+II.3- Loading A(i) Registers
+----------------------------
+
+Before calling a n-ary predicate, registers A(0)..A(n-1) must be initialized.
+The initialization of A(i) is as follows (the fonctions Put_... do not return
+any value):
+
+a new variable:
+   Put_X_Variable(i,j);  
+
+   Also initialize A(j) with the same variable, 
+   you can thus use Put_Variable(i,i); if only A(i) must be initialized.
+             
+a variable already stored in A(j) (i.e. bound):
+   A(i)=A(j);
+
+an integer 'n':
+   Put_Integer(n,i);
+
+a constant 'atom':
+   Put_Constant(atom,i);
+
+an empty list:
+   Put_Constant(atom_nil,i);
+   or
+   Put_Nil(i);
+   
+a list [car|cdr]:
+   Put_List(i)
+   <unification of sub-term 'car'>
+   <unification of sub-term 'cdr'>
+
+   see above for the unification of sub terms. In this mode these
+   instructions always succeed (i.e. they always return TRUE).
+
+a structure f(t1,...,tm):
+   Put_Structure(atom_f,m,i)
+   <unification of sub-term 't1'>
+       :
+   <unification of sub-term 'tm'>
+
+   atom_f is the atom corresponding to the functor 'f'
+   (see above how to define new atoms from strings)
+
+
+
+II.4- Controling The Execution
+------------------------------
+
+The following macros are defined in wam_interface.h:
+
+Pl_Init_Wam_And_Module(argc,argv,m)
+
+   Intialize the Prolog engine and the module 'm'
+   (if more than 1 module are needed this macro can be easily modified).
+   Must be called before any other interface function/macro. 
+
+
+Pl_ReInit_Wam
+
+   Reinitialize the Prolog engine (e.g. reset all stack pointers).
+   Generally this is used before a new query (before the loading of A(i)
+   registers for the new query).
+   In fact for the first query, this call is useless.
+  
+   The effect of this macros is to re-initialize all stacks and thus the
+   Prolog terms contained in the heap are lost. So it is not safe to keep
+   pointers on them.
+
+Pl_Term_Wam
+
+   Stop the Prolog engine. 
+   Must be called after any other interface function/macro. 
+   
+
+Pl_Query(predhex,arity,code_else)
+
+   calls the predicate whose internal name is 'predhex' and arity is 'arity'.
+   This predicate must be has been defined as public (see above).
+   code_else is the code to execute if the query fails.
+
+   The internal name of a predicate is the name provided by pl2hex utility
+   (see wamcc user's manual).
+
+   ex:
+
+   % pl2hex append
+   <X617070656E64>
+
+   so, after loading A(0), A(1) and A(2) we can execute
+
+   Pl_Query(X617070656E64,3,goto error;)
+
+
+Pl_Next_Solution(code_else)
+
+   bactracks to find next solution of the last query. If no more alternatives
+   exists, code_else is executed.
+
+
+
+II.5- Compiling the Files
+-------------------------
+
+To produce the executable 'prog' you need to:
+
+   - compile the Prolog module modul to produce the file a modul.o
+
+     % wamcc modul
+     % w_gcc -c modul.c
+
+   - compile the C program 'prg.c' to produce the file a prog.o
+
+     % w_gcc -c prog.c
+
+   - link them together to provide the executable 'prog'
+
+     % w_gcc -o prog prog.o modul.o -lwamcc
+
+It is possible to use a Makefile, and more, bmf_wamcc can generate it 
+(see wamcc user's manual) 
+
+For example:
+
+     % bmf -v -o prog prog.o modul
+
+
+
+II.6- An Example
+----------------
+
+We want to be able to ask about the grand-parents of a data base 
+(predicate anc/2).
+
+'modul.pl' is the following program:
+
+
+/* modul.pl */
+
+:- public anc/2.          % we want to call it from C
+
+anc(X,Z):- father(X,Y), father(Y,Z).
+
+father(a,b).
+father(a,c).
+
+father(b,e).
+father(b,d).
+
+father(c,f).
+father(c,g).
+
+father(e,h).
+father(d,i).
+
+father(f,j).
+father(f,k).
+
+
+The prog.c file will ask about queries of the form 'anc(a,X)', and will find
+all solutions.
+
+
+/* prog.c */
+
+#include "wam_interface.h"
+
+#define ANC  X616E63           /* thanks to pl2hex anc */
+
+
+int main(int argc,char *argv[])
+
+{
+ char     str[10];
+ AtomInf *atom;
+ WamWord  word,tag,*adr;
+ WamWord  ans_word;
+
+
+ Pl_Init_Wam_And_Module(argc,argv,modul)
+
+start:
+ Pl_ReInit_Wam                                  /* useful for next queries*/
+
+ Lib1(printf,"\nEnter a name (a/b/c/d)\n");
+ Lib1(gets,str);				/* Read a constant        */
+ atom=Create_Allocate_Atom(str);		/* add this new constant  */
+
+ Put_Constant(atom,0);				/* A(0)=the atom created  */
+ Put_X_Variable(1,1);				/* A(1)=new var (unbound) */
+ ans_word=A(1);                                 /* save word which will   */
+                                                /* contain the answer     */
+
+
+ Pl_Query(ANC,2,goto no_more;)			/* query: anc(atom,Var)   */
+
+ for(;;)
+    {
+     Deref(ans_word,word,tag,adr)		/* get the aswer          */
+     atom=UnTag_CST(word);			/* It's an atom.          */
+     Lib2(printf,"Solution : %s\n",atom->name); /* write the solution     */
+
+/* simpler:  Simple_Write_Term(ans_word); which writes a Prolog term*/
+    
+     Pl_Next_Solution(break;)                   /* find other solutions   */
+    }
+
+
+no_more:
+ Lib1(printf,"No more Solutions\n");
+ Lib1(printf,"Other Query <y/n> : ");
+ Lib1(gets,str);
+
+ if (*str=='y')
+     goto start;
+
+ Pl_Term_Wam
+
+ return 0;
+}
+
+
+Example of execution:
+
+% prog
+
+Enter a name (a/b/c/d)
+a
+Solution : e
+Solution : d
+Solution : f
+Solution : g
+No more Solutions
+Other Query <y/n> : y
+
+Enter a name (a/b/c/d)
+b
+Solution : h
+Solution : i
+No more Solutions
+Other Query <y/n> : n
+
+%
+
+
+
+III- Bugs
+---------
+
+Please report (detailled) bugs to diaz@margaux.inria.fr.
+

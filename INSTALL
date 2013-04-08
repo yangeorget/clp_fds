@@ -1,0 +1,56 @@
+                    clp(FD,S) installation procedure
+                    --------------------------------
+
+
+I- Requirements
+---------------
+clp_fds reguires the GNU C compiler (gcc) version 2.4.5 or higher and is
+available for:
+
+   - SunOS (4.3.1)
+   - Solaris
+   - Linux ELF on ix86 processors
+
+
+II- Installation
+----------------
+Uncompress the distribution:
+
+   %  gzcat clp_fds_vXXX.tar.gz | tar xvf - 
+
+Install the distribution:
+
+   %  make install
+
+Add symbolic links to the directories that contain your examples 
+(the installation procedure installs clp_fds locally in src/):
+
+   %  cd Examples/Fuzzy (for example)
+   %  ln -s ../../src/clp_fds clp_fds
+   %  ln -s ../../src/bmf_clp_fds bmf_clp_fds
+   %  ln -s ../../src/wam_gcc wam_gcc
+   %  ln -s ../../src/sfd_semiring.h semiring
+
+
+III- Changing the semiring
+--------------------------
+Edit src/sfd_semiring.h, then recompile the library.
+
+   % make semiring
+
+
+IV- Bugs
+--------
+Please report (detailled) bugs to Yan.Georget@inria.fr
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,48 @@
+BUGS
+----
+
+1/
+Date: Tue Jul  7 15:07:06 MET DST 1998
+Symptom: Typos in the manual
+Correction: Fixed in the current version
+
+2/
+Date: Tue Jul  7 15:07:06 MET DST 1998
+Symptom: predicates 'b <=> x>y'/3, 'b <=> x>y:(a;b)'/5, 
+	'b <=> x>=y'/3, 'b <=> x>=y:(a;b)'/5 do not work properly
+Correction: Fixed in the current version
+            
+3/
+Date: Fri Jul 17 15:37:57 MET DST 1998
+Symptom: Typos in the manual
+Correction: Fixed in the current version
+
+4/
+Date: Tue Aug  4 17:48:48 MET DST 1998
+Symptom: Bug for Linux distribution
+Correction: it was the BUG 9, which is fixed
+ 
+5/
+Date: Tue Aug 11 17:46:41 MET DST 1998
+Symptom: Bug in deleteff
+Correction: Fixed in the current version
+
+6/
+Date: Wed Sep  9 12:12:03 MET DST 1998
+Symptom: Bug in meta-constraints
+Correction: Fixed in the current version
+
+7/
+Date: Fri Nov 20 13:58:22 MET 1998
+Symptom: Bug in constraint retraction
+Correction: Fixed in the current version
+
+8/
+Date: Wed Nov 25 11:13:11 MET 1998
+Symptom: Bug in meta-constraints (w.r.t. constraint retraction)
+Correction: Fixed in the current version
+
+9/
+Date: Wed Dec 16 14:54:13 MET 1998
+Symptom: Bug in v_element
+Correction: Fixed in the current version

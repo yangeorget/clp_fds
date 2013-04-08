@@ -1,0 +1,136 @@
+/****************************************************************************
+Prolog to Wam Compiler                     INRIA Rocquencourt - ChLoE Project
+Version 2.21                                               Daniel Diaz - 1994
+Modified by Yan Georget - June 1998
+file : sfd_semiring.usr
+****************************************************************************/
+LibPrototype(extern int fprintf())
+
+
+#define Semiring_Mul_3                                \
+    {                                                 \
+	VecWord x ;                                   \
+	Deref(A(0),word,tag,adr)  A(0)=word;          \
+	Deref(A(1),word,tag,adr)  A(1)=word;          \
+	x = MulA(UnTag_INT(A(0)),UnTag_INT(A(1))) ;   \
+	get_integer(x,2) ;                            \
+    }
+
+
+#define Semiring_Add_3                                \
+    {                                                 \
+	VecWord x ;                                   \
+	Deref(A(0),word,tag,adr)  A(0)=word;          \
+	Deref(A(1),word,tag,adr)  A(1)=word;          \
+	x = AddA(UnTag_INT(A(0)),UnTag_INT(A(1))) ;   \
+	get_integer(x,2) ;                            \
+    }
+
+ 
+#define Semiring_Greater_2                              \
+    {                                                   \
+	Deref(A(0),word,tag,adr)  A(0)=word;            \
+	Deref(A(1),word,tag,adr)  A(1)=word;            \
+	if (!GreaterA(UnTag_INT(A(0)),UnTag_INT(A(1)))) \
+	   fail                                         \
+    }
+
+
+#define Semiring_GreaterEq_2                                   \
+    {                                                          \
+	Deref(A(0),word,tag,adr)  A(0)=word;                   \
+	Deref(A(1),word,tag,adr)  A(1)=word;                   \
+	if (!GreaterOrEqualA(UnTag_INT(A(0)),UnTag_INT(A(1)))) \
+	   fail                                                \
+    }
+
+
+#define Semiring_Less_2                                 \
+    {                                                   \
+	Deref(A(0),word,tag,adr)  A(0)=word;            \
+	Deref(A(1),word,tag,adr)  A(1)=word;            \
+	if (!LessA(UnTag_INT(A(0)),UnTag_INT(A(1))))    \
+	   fail                                         \
+    }
+
+
+#define Semiring_LessEq_2                                      \
+    {                                                          \
+	Deref(A(0),word,tag,adr)  A(0)=word;                   \
+	Deref(A(1),word,tag,adr)  A(1)=word;                   \
+	if (!LessOrEqualA(UnTag_INT(A(0)),UnTag_INT(A(1))))    \
+	   fail                                                \
+    }
+
+  
+#define Semiring_Null_1                                 \
+    {                                                   \
+     Deref(A(0),word,tag,adr)   A(0)=word;              \
+     if (tag==INT)                                      \
+	{                                               \
+	  if (!IsNullA(UnTag_INT(A(0))))                \
+	   fail                                         \
+	}                                               \
+      else                                              \
+	   get_integer(((VecWord) NullA),0)             \
+    }
+
+  
+#define Semiring_Unity_1                                \
+    {                                                   \
+     Deref(A(0),word,tag,adr)   A(0)=word;              \
+     if (tag==INT)                                      \
+	{                                               \
+	  if (!IsUnityA(UnTag_INT(A(0))))               \
+	   fail                                         \
+        }                                               \
+      else                                              \
+	   get_integer(((VecWord) UnityA),0)            \
+    }
+
+
+#define Semiring_Size_1                                 \
+    {                                                   \
+     Deref(A(0),word,tag,adr)   A(0)=word;              \
+     if (tag==INT)                                      \
+	{                                               \
+	  if (UnTag_INT(A(0)) != A_SIZE)                \
+	   fail                                         \
+        }                                               \
+      else                                              \
+	   get_integer(((VecWord) A_SIZE),0)            \
+    }
+
+    
+#define Semiring_Value_Write_1                          \
+    {                                                   \
+     Deref(A(0),word,tag,adr)   A(0)=word;              \
+     if (tag==INT)                                      \
+	 Lib3(fprintf,output,A_FORMAT,UnTag_INT(A(0))); \
+       else                                             \
+	 fail                                           \
+    }
+
+
+    
+/* Above this line, put your first macros (these included by pragma_c) */
+
+#undef  fail
+#define fail Fail_Like_Bool
+
+/* Below this line, put your others macros and your functions */
+
+
+
+static void Initialize_Usr(void)
+
+{
+}
+
+/* end of user file */
+
+#undef  fail
+#define fail Fail_Like_Wam
+
+
+

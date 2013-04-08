@@ -1,0 +1,334 @@
+/****************************************************************************
+Prolog to Wam Compiler                      INRIA Rocquencourt - LOCO Project
+Version 1.0                                           Yan Georget - June 1998
+file : sfd_meta.usr
+****************************************************************************/
+
+/*---------------------------------*/
+/* Constants                       */
+/*---------------------------------*/
+
+/*---------------------------------*/
+/* Type Definitions                */
+/*---------------------------------*/
+
+/*---------------------------------*/
+/* Global Variables                */
+/*---------------------------------*/
+
+/*---------------------------------*/
+/* Functions's Protoypes           */
+/*---------------------------------*/
+
+
+/* Above this line, put your first macros (these included by pragma_c) */
+
+#undef  fail
+#define fail Fail_Like_Bool
+
+/* Below this line, put your others macros and your functions */
+
+
+
+/*---------------------------------*/
+/* EQUIV_EQC                       */
+/*---------------------------------*/
+
+void equiv_eqc_r(Range* rangeb, int xmin, int xmax, int c)
+{
+  if (xmin > c || xmax < c)
+    {
+      Init_Range_Term(rangeb,0,UnityA);
+      return;
+    }
+
+  if (xmin == c && xmax == c)
+    {
+      Init_Range_Term(rangeb,1,UnityA);
+      return;
+    }
+
+  Init_Range_Interval(rangeb,0,1,UnityA);	
+}
+
+
+void equiv_eqc_a(Range *range, int bval, int c)
+{     
+  if (bval == 0)
+    Init_Range_Comp_Term(range,c);
+  else
+    Init_Range_Term(range,c,UnityA);
+}
+
+
+/*---------------------------------*/
+/* EQUIV_GC                        */
+/*---------------------------------*/
+
+void equiv_gc_r(Range* rangeb, int xmin, int xmax, int c)
+{
+  if (xmax <= c)
+    {
+      Init_Range_Term(rangeb,0,UnityA);
+      return;
+    }
+
+  if (xmin > c)
+    {
+      Init_Range_Term(rangeb,1,UnityA);
+      return;
+    }
+
+  Init_Range_Interval(rangeb,0,1,UnityA);	
+}
+
+
+void equiv_gc_a(Range *range, int bval, int c)
+{     
+  if (bval == 0)
+    Init_Range_Interval(range,0,c,UnityA);
+  else
+    Init_Range_Interval(range,c+1,INTERVAL_INFINITY,UnityA);
+}
+
+
+/*---------------------------------*/
+/* EQUIV_GEC                       */
+/*---------------------------------*/
+
+void equiv_gec_r(Range* rangeb, int xmin, int xmax, int c)
+{
+  if (xmax < c)
+    {
+      Init_Range_Term(rangeb,0,UnityA);
+      return;
+    }
+
+  if (xmin >= c)
+    {
+      Init_Range_Term(rangeb,1,UnityA);
+      return;
+    }
+
+  Init_Range_Interval(rangeb,0,1,UnityA);	
+}
+
+
+void equiv_gec_a(Range *range, int bval, int c)
+{     
+  if (bval == 0)
+    Init_Range_Interval(range,0,c-1,UnityA);
+  else
+    Init_Range_Interval(range,c,INTERVAL_INFINITY,UnityA);
+}
+
+
+/*---------------------------------*/
+/* EQUIV_EQ                        */
+/*---------------------------------*/
+
+void wi_equiv_eq_r_aux_r_i(Range *rangeb, Range *range1, int min, int max)
+{
+  if (range1->min > max || range1->max < min)
+    { 
+      rangeb->max = 0; 
+      rangeb->mode = R_INTEGER;
+      return;
+    }
+  
+  BEGIN_ENUM_VECTORAA(range1->vec)
+    if (!IsNullA(vec_val))
+      if (min <= vec_elem && vec_elem <= max)
+	return;
+  END_ENUM_VECTORAA
+    
+  rangeb->max = 0; 
+  rangeb->mode = R_INTEGER;
+}
+
+
+void wi_equiv_eq_r_aux_r_r(Range *rangeb, Range *range1, Range *range2)
+{     
+  if (range1->min > range2->max || range1->max < range2->min)
+    { 
+      rangeb->max = 0; 
+      rangeb->mode = R_INTEGER;
+      return;
+    }
+
+  BEGIN_ENUM_VECTORAA(range1->vec)
+    if (!IsNullA(vec_val))
+      if (!IsNullA(ValA_Vector(range2->vec,vec_elem)))
+	return;
+  END_ENUM_VECTORAA
+          
+  rangeb->max = 0; 
+  rangeb->mode = R_INTEGER;
+}
+
+
+void equiv_eq_r(Range *rangeb, Range *range1, Range *range2)
+{
+  switch (range1->mode)
+    {
+    case R_INTEGER:
+      equiv_eqc_r(rangeb,range2->min,range2->max,range1->min);
+      return;
+
+    case R_INTERVAL: 
+      switch (range2->mode)
+	{
+	case R_INTEGER:
+	  equiv_eqc_r(rangeb,range1->min,range1->max,range2->min);
+	  return;
+	  
+	case R_INTERVAL: 
+	  Init_Range_Interval(rangeb,0,1,UnityA);
+	  if (range1->min > range2->max || range1->max < range2->min)
+	    { 
+	      rangeb->max = 0;
+	      rangeb->mode = R_INTEGER;
+	    }
+	  return;
+      
+	case R_SPARSE:
+	  Init_Range_Interval(rangeb,0,1,UnityA);
+	  wi_equiv_eq_r_aux_r_i(rangeb,range2,range1->min,range1->max);
+	  return;
+	}
+      
+    case R_SPARSE:
+      switch (range2->mode)
+	{
+	case R_INTEGER:
+	  equiv_eqc_r(rangeb,range1->min,range1->max,range2->min);
+	  return;
+	  
+	case R_INTERVAL: 
+	  Init_Range_Interval(rangeb,0,1,UnityA);
+	  wi_equiv_eq_r_aux_r_i(rangeb,range1,range2->min,range2->max);
+	  return;
+      
+	case R_SPARSE:
+	  Init_Range_Interval(rangeb,0,1,UnityA);
+	  wi_equiv_eq_r_aux_r_r(rangeb,range1,range2);
+	  return;
+	}
+    }
+}
+
+
+void equiv_eq_a(Range *range, Range *range1, int bval)
+{  
+  Init_Range_Range(range,range1);
+  if (bval == 0)
+    {
+      Range_DA(range);
+    }
+}
+
+
+/*---------------------------------*/
+/* EQUIV_G                         */
+/*---------------------------------*/
+
+void equiv_g_r(Range *rangeb, int xmin, int xmax, int ymin, int ymax)
+{     
+  if (xmin > ymax)
+    {
+      Init_Range_Term(rangeb,1,UnityA);
+      return;
+    }
+  
+  if (xmax <= ymin)
+    {
+      Init_Range_Term(rangeb,0,UnityA);
+      return;
+    }
+  
+  Init_Range_Interval(rangeb,0,1,UnityA);
+}
+
+
+void equiv_g_a1(Range *range, Range *range1, int bval)
+{     
+  Init_Range_Range(range,range1);
+
+  if (bval == 1)
+    Range_GA(range);
+  else
+    Range_LeA(range);
+}
+  
+
+void equiv_g_a2(Range *range, Range *range1, int bval)
+{     
+  Init_Range_Range(range,range1);
+
+  if (bval == 1)
+    Range_LA(range);
+  else
+    Range_GeA(range);
+}
+  
+
+/*---------------------------------*/
+/* EQUIV_GE                        */
+/*---------------------------------*/
+
+void equiv_ge_r(Range *rangeb, int xmin, int xmax, int ymin, int ymax)
+{     
+  if (xmin >= ymax)
+    {
+      Init_Range_Term(rangeb,1,UnityA);
+      return;
+    }
+  
+  if (xmax < ymin)
+    {
+      Init_Range_Term(rangeb,0,UnityA);
+      return;
+    }
+  
+  Init_Range_Interval(rangeb,0,1,UnityA);
+}
+
+
+void equiv_ge_a1(Range *range, Range *range1, int bval)
+{     
+  Init_Range_Range(range,range1);
+
+  if (bval == 1)
+    Range_GeA(range);
+  else
+    Range_LA(range);
+}
+  
+
+void equiv_ge_a2(Range *range, Range *range1, int bval)
+{     
+  Init_Range_Range(range,range1);
+
+  if (bval == 1)
+    Range_LeA(range);
+  else
+    Range_GA(range);
+}
+  
+
+
+/*-------------------------------------------------------------------------*/
+/* INITALIZE_USR                                                           */
+/*                                                                         */
+/*-------------------------------------------------------------------------*/
+static void Initialize_Usr(void)
+
+{
+}
+
+/* end of user file */
+
+#undef  fail
+#define fail Fail_Like_Wam
+
+

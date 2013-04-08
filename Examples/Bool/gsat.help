@@ -1,0 +1,9 @@
+GSAT Examples:
+--------------
+
+gsatN_data.pl: contains the data of a 3-sat problem with N variables
+gsat.pl      : contains predicates for the resolution
+
+To compile pb N:
+bmf_clp_fds gsatN_data gsat
+make -f gsatN_data.mk

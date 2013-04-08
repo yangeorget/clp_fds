@@ -1,0 +1,68 @@
+/****************************************************************************
+Prolog to Wam Compiler                     INRIA Rocquencourt - ChLoE Project
+Version 2.1                                                Daniel Diaz - 1994
+Modified by Yan Georget - June 1998
+file : queens_wcs.usr
+****************************************************************************/
+
+/* Above this line, put your first macros (these included by pragma_c) */
+
+#undef  fail
+#define fail Fail_Like_Bool
+
+/* Below this line, put your others macros and your functions */
+
+
+void dpmc(Range *range, Range *range2, int o)
+{   
+  int i,j;
+  
+  switch (range2->mode)
+    {
+    case R_EMPTY:
+      Init_Range_Empty(range);
+      return;
+      
+    case R_INTEGER:
+      Init_Range_Full(range);
+      Range_Becomes_Sparse(range);
+      Set_ValA_Null_Vector(range->vec,range2->min);
+      if (o+range2->min <= vec_infinity)
+	Set_ValA_Null_Vector(range->vec,o+range2->min);
+      if (range2->min >= o)
+	Set_ValA_Null_Vector(range->vec,(range2->min)-o);
+      Range_MulA_Term(range,range2->sigma);
+      return;
+
+    case R_INTERVAL:
+      Init_Range_Interval(range,0,vec_infinity,range2->sigma);
+      return;
+    
+    case R_SPARSE:
+      Init_Range_Empty(range);
+      Range_Becomes_Sparse(range);
+      for(i=0; i<=vec_infinity; i++)
+	for(j=0; j<=vec_infinity; j++)
+	  if ((j != i) && (j != i+o) && (j != i-o))
+	    Add_ValA_Vector(range->vec,i,ValA_Vector(range2->vec,j));
+      Range_From_Vector(range);
+      return;
+    }
+}
+
+
+/*-------------------------------------------------------------------------*/
+/* INITALIZE_USR                                                           */
+/*                                                                         */
+/*-------------------------------------------------------------------------*/
+static void Initialize_Usr(void)
+{
+}
+
+/* end of user file */
+
+#undef  fail
+#define fail Fail_Like_Wam
+
+
+

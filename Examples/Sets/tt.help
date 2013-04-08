@@ -1,0 +1,9 @@
+Time Tabling Problems:
+----------------------
+
+ttN_data.pl: contains the data of problem N
+tt.pl      : contains predicates for the resolution
+
+To compile pb N:
+bmf_clp_fds ttN tt ttN_data
+make -f ttN.mk

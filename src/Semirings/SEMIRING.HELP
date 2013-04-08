@@ -1,0 +1,17 @@
+#define A_NAME =      <name>
+
+#define AddA(x,y)     <C code for +, must be idempotent>
+#define MulA(x,y)     <C code for *, must be idempotent>
+
+#define A_SIZE        <bits nb for encoding a semiring value>    
+#define A_SIZE_BITS   <log2 A_SIZE>
+#define A_WD_SZ_BITS  <5 - A_SIZE_BITS>     
+#define A_MASK        <2^A_SIZE - 1> 
+
+#define A_FORMAT      <format for printing> 
+
+<the following definitions can be optimized w.r.t. the semiring used>
+#define GreaterOrEqualA(x,y)   (AddA(x,y) == x)  
+#define GreaterA(x,y)          ((x != y) && (AddA(x,y) == x))  
+#define LessOrEqualA(x,y)      (AddA(x,y) == y)  */
+#define LessA(x,y)             ((x != y) && (AddA(x,y) == y)) 

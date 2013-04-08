@@ -1,0 +1,87 @@
+/****************************************************************************
+Prolog to Wam Compiler                     INRIA Rocquencourt - ChLoE Project
+Version 2.21                                               Daniel Diaz - 1994
+Modified by Yan Georget - June 1998
+file : sfd_enumeration.usr
+****************************************************************************/
+
+
+
+#define LABELINGFF1                X6C6162656C696E67666631
+
+#define Labelingff_1                                                        \
+    {                                                                       \
+     int nb_elem_var;                                                       \
+     int nb_elem=vec_infinity+2;                                            \
+     WamWord *fdv_adr= NULL;                                                \
+     WamWord *lst_adr;                                                      \
+     WamWord *top_heap=H;                                                   \
+                                                                            \
+     Deref(A(0),word,tag,adr)                                               \
+     while(tag==LST)                                                        \
+        {                                                                   \
+         lst_adr=UnTag_LST(word);                                           \
+         Deref(Car(lst_adr),word,tag,adr)                                   \
+         if (tag==FDV)                                                      \
+            {                                                               \
+             adr=UnTag_FDV(word);                                           \
+             nb_elem_var =  Range_Nb_Elem(Range(adr)) ;                     \
+             if (nb_elem_var<nb_elem)                                       \
+                {                                                           \
+                 if (fdv_adr)                                               \
+                    {                                                       \
+                     word=Tag_Value(LST,top_heap+1);                        \
+                     *top_heap++ =word;                                     \
+                     *top_heap++ =Tag_Value(REF,fdv_adr);                   \
+                    }                                                       \
+                                                                            \
+                 nb_elem=nb_elem_var;                                       \
+                 fdv_adr=adr;                                               \
+                }                                                           \
+              else                                                          \
+                {                                                           \
+                 word=Tag_Value(LST,top_heap+1);                            \
+                 *top_heap++ =word;                                         \
+                 *top_heap++ =Tag_Value(REF,adr);                           \
+                }                                                           \
+            }                                                               \
+         Deref(Cdr(lst_adr),word,tag,adr)                                   \
+        }                                                                   \
+                                                                            \
+     if (fdv_adr)                                                           \
+        {                                                                   \
+         *top_heap++ =word_nil;                                             \
+         A(0)= *H;                                                          \
+         A(1)=Tag_Value(REF,fdv_adr);                                       \
+         H=top_heap;                                                        \
+         execute(Pred_Name(LABELINGFF1,2),1,"labelingff1",2)                \
+        }               /* else proceed (for labelingff/1)               */ \
+    }
+
+
+
+/* Above this line, put your first macros (these included by pragma_c) */
+
+
+#undef  fail
+#define fail Fail_Like_Bool
+
+/* Below this line, put your others macros and your functions */
+
+
+
+
+static void Initialize_Usr(void)
+
+{
+}
+
+/* end of user file */
+
+#undef  fail
+#define fail Fail_Like_Wam
+
+
+
+
+
